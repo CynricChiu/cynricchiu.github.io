@@ -1,6 +1,8 @@
 #table1 td{
 	color: #0099ff;
+	background: rgba(0,255,0,0.1);
 }
 #table2 td{
 	color: #009900;
+	background: rgba(255,255,0,0.1);
 }
