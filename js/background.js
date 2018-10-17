@@ -1,147 +1,101 @@
-!function(){
-//定义变量
-var container;
-var camera, scene, projector, renderer;
-var PI2 = Math.PI * 2;
-//填充圆形
-var programFill = function ( context ) {
+!function() {
+	var m_canvas = document.createElement("canvas");
+	m_canvas.style.cssText = "position:fixed;top:0;left:0;z-index:-1;opacity:1.0;"
+	document.getElementsByTagName("body")[0].appendChild(m_canvas);
+	m_canvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+	m_canvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+	var ctx = m_canvas.getContext("2d");
+	"use strict";
+		w = m_canvas.width,
+		  h = m_canvas.height,
+		    
+		  hue = 217,
+		  stars = [],
+		  count = 0,
+		  maxStars = 1400;
 
-	context.beginPath();
-	context.arc( 0, 0, 1, 0, PI2, true );
-	context.closePath();
-	context.fill();
+		// Thanks @jackrugile for the performance tip! http://codepen.io/jackrugile/pen/BjBGoM
+		// Cache gradient
+		var canvas2 = document.createElement('canvas'),
+		    ctx2 = canvas2.getContext('2d');
+		    canvas2.width = 100;
+		    canvas2.height = 100;
+		var half = canvas2.width/2,
+		    gradient2 = ctx2.createRadialGradient(half, half, 0, half, half, half);
+		    gradient2.addColorStop(0.025, '#fff');
+		    gradient2.addColorStop(0.1, 'hsl(' + hue + ', 61%, 33%)');
+		    gradient2.addColorStop(0.25, 'hsl(' + hue + ', 64%, 6%)');
+		    gradient2.addColorStop(1, 'transparent');
 
-}
-//圆形边界
-var programStroke = function ( context ) {
+		    ctx2.fillStyle = gradient2;
+		    ctx2.beginPath();
+		    ctx2.arc(half, half, half, 0, Math.PI * 2);
+		    ctx2.fill();
 
-	context.lineWidth = 0.05;
-	context.beginPath();
-	context.arc( 0, 0, 1, 0, PI2, true );
-	context.closePath();
-	context.stroke();
+		// End cache
 
-}
+		function random(min, max) {
+		  if (arguments.length < 2) {
+		    max = min;
+		    min = 0;
+		  }
+		  
+		  if (min > max) {
+		    var hold = max;
+		    max = min;
+		    min = hold;
+		  }
 
-var mouse = { x: 0, y: 0 }, INTERSECTED;
-
-init();
-animate();
-
-function init() {
-
-	container = document.createElement( 'div' );
-	container.id = 'background';
-	container.style.position = 'absolute';
-	container.style.zIndex = '-1';
-	document.body.appendChild( container );
-
-	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
-	camera.position.set( 0, 300, 500 );
-
-	scene = new THREE.Scene();
-
-	for ( var i = 0; i < 100; i ++ ) {
-
-		var particle = new THREE.Particle( new THREE.ParticleCanvasMaterial( { color: Math.random() * 0x808080 + 0x808080, program: programStroke } ) );
-		particle.position.x = Math.random() * 800 - 400;
-		particle.position.y = Math.random() * 800 - 400;
-		particle.position.z = Math.random() * 800 - 400;
-		particle.scale.x = particle.scale.y = Math.random() * 10 + 10;
-		scene.add( particle );
-
-	}
-
-	projector = new THREE.Projector();
-
-	renderer = new THREE.CanvasRenderer();
-	renderer.setSize( window.innerWidth, window.innerHeight );
-
-	container.appendChild( renderer.domElement );
-
-
-
-	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-
-	//
-
-	window.addEventListener( 'resize', onWindowResize, false );
-
-}
-
-function onWindowResize() {
-
-	camera.aspect = window.innerWidth / window.innerHeight;
-	camera.updateProjectionMatrix();
-
-	renderer.setSize( window.innerWidth, window.innerHeight );
-
-}
-
-function onDocumentMouseMove( event ) {
-
-	event.preventDefault();
-
-	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-
-}
-
-//
-
-function animate() {
-
-	requestAnimationFrame( animate );
-
-	render();
-
-}
-
-var radius = document.getElementById("background").offsetWidth/6;
-var theta = 0;
-
-function render() {
-
-	// rotate camera
-
-	theta += 0.2;
-
-	camera.position.x = radius * Math.sin( theta * Math.PI / 360 );
-	camera.position.y = radius * Math.sin( theta * Math.PI / 360 );
-	camera.position.z = radius * Math.cos( theta * Math.PI / 360 );
-	camera.lookAt( scene.position );
-
-	// find intersections
-
-	camera.updateMatrixWorld();
-
-	var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
-	projector.unprojectVector( vector, camera );
-
-	var ray = new THREE.Ray( camera.position, vector.subSelf( camera.position ).normalize() );
-
-	var intersects = ray.intersectObjects( scene.children );
-
-	if ( intersects.length > 0 ) {
-
-		if ( INTERSECTED != intersects[ 0 ].object ) {
-
-			if ( INTERSECTED ) INTERSECTED.material.program = programStroke;
-
-			INTERSECTED = intersects[ 0 ].object;
-			INTERSECTED.material.program = programFill;
-
+		  return Math.floor(Math.random() * (max - min + 1)) + min;
 		}
 
-	} else {
+		var Star = function() {
 
-		if ( INTERSECTED ) INTERSECTED.material.program = programStroke;
+		  this.orbitRadius = random(w / 2 - 50);
+		  this.radius = random(100, this.orbitRadius) / 10;
+		  this.orbitX = w / 2;
+		  this.orbitY = h / 2;
+		  this.timePassed = random(0, maxStars);
+		  this.speed = random(this.orbitRadius) / 100000;
+		  this.alpha = random(2, 10) / 10;
 
-		INTERSECTED = null;
+		  count++;
+		  stars[count] = this;
+		}
 
-	}
+		Star.prototype.draw = function() {
+		  var x = Math.sin(this.timePassed + 1) * this.orbitRadius + this.orbitX,
+		      y = Math.cos(this.timePassed) * this.orbitRadius/2 + this.orbitY,
+		      twinkle = random(10);
 
-	renderer.render( scene, camera );
+		  if (twinkle === 1 && this.alpha > 0) {
+		    this.alpha -= 0.05;
+		  } else if (twinkle === 2 && this.alpha < 1) {
+		    this.alpha += 0.05;
+		  }
 
-}
-}()
+		  ctx.globalAlpha = this.alpha;
+		    ctx.drawImage(canvas2, x - this.radius / 2, y - this.radius / 2, this.radius, this.radius);
+		  this.timePassed += this.speed;
+		}
+
+		for (var i = 0; i < maxStars; i++) {
+		  new Star();
+		}
+
+		function animation() {
+		    ctx.globalCompositeOperation = 'source-over';
+		    ctx.globalAlpha = 0.8;
+		    ctx.fillStyle = 'hsla(' + hue + ', 64%, 6%, 1)';
+		    ctx.fillRect(0, 0, w, h)
+		  
+		  ctx.globalCompositeOperation = 'lighter';
+		  for (var i = 1, l = stars.length; i < l; i++) {
+		    stars[i].draw();
+		  };  
+		  
+		  window.requestAnimationFrame(animation);
+		}
+
+		animation();
+}();

@@ -1594,7 +1594,7 @@ img {
   background-color: rgba(0, 0, 0, 0); }
 
 #MapView {
-  width: 100%;
+  width: 90%;
   height: 100%;
   border: 0px solid rgba(0, 0, 0, 0);
   border-radius: 10px;
